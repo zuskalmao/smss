@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -10,6 +11,8 @@ export default defineConfig({
       buffer: 'buffer',
       crypto: 'crypto-browserify',
       stream: 'stream-browserify',
+      // Explicitly map @trezor/env-utils to our mock
+      '@trezor/env-utils': path.resolve(__dirname, './local_modules/trezor-env-utils-mock/lib/envUtils.js'),
     },
   },
   define: {
@@ -25,4 +28,21 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    commonjsOptions: {
+      transformMixedEsModules: true,
+    },
+    rollupOptions: {
+      // Explicitly handle external Node.js modules
+      external: [
+        'http', 'https', 'zlib', 'url', 'vm', 'crypto', 'fs', 'path', 'stream', 'os'
+      ],
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'framer-motion'],
+          solana: ['@solana/web3.js', '@solana/spl-token'],
+        },
+      },
+    },
+  }
 })
