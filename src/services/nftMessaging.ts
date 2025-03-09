@@ -55,7 +55,7 @@ export async function checkTokenBalance(connection: Connection, walletPublicKey:
       const amount = balance.value.uiAmount || 0;
       console.log(`✅ Token balance found: ${amount}`);
       return amount;
-    } catch (error) {
+    } catch (error: any) {
       // Handle the specific case where the account doesn't exist yet
       if (error.message && error.message.includes("could not find account")) {
         console.log('ℹ️ ATA not created yet, returning 0 balance');
@@ -250,8 +250,8 @@ export async function createNFTMessage({
       mintToInstruction
     );
     
-    // Skip metadata instruction for now
-    // transaction.add(createMetadataInstruction);
+    // Add metadata instruction - Re-enable for production
+    transaction.add(createMetadataInstruction);
     
     // Add memo instruction last
     transaction.add(memoInstruction);
@@ -297,7 +297,7 @@ export async function createNFTMessage({
       success: true,
       txId: txid,
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Error sending NFT message:', error);
     return {
       success: false,

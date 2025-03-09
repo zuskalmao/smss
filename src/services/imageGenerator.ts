@@ -1,206 +1,164 @@
-// Client-side image generator for NFT messages
-// This creates a canvas element, renders text on it, and returns a data URL
+import { createCanvas, loadImage, registerFont } from 'canvas';
 
-/**
- * Generate an image with the message text styled similar to the preview
- */
+// In a browser environment, we'll simulate canvas functionality
+let canvas: any;
+let ctx: any;
+
+// Generator function for message images
 export async function generateMessageImage(
-  message: string,
-  sender: string,
+  message: string, 
+  senderAddress: string, 
   timestamp: number
 ): Promise<string> {
-  // Create a canvas element to draw on
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  
-  // Set canvas dimensions (square format)
-  const size = 800;
-  canvas.width = size;
-  canvas.height = size;
-  
-  if (!ctx) {
-    throw new Error('Could not get canvas context');
-  }
-  
-  // Background gradient
-  const gradient = ctx.createLinearGradient(0, 0, size, size);
-  gradient.addColorStop(0, '#0F172A'); // dark blue
-  gradient.addColorStop(1, '#1E293B'); // slightly lighter blue
-  
-  // Fill background
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, size, size);
-  
-  // Add subtle pattern
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
-  for (let i = 0; i < 20; i++) {
-    const x = Math.random() * size;
-    const y = Math.random() * size;
-    const r = Math.random() * 3 + 1;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  
-  // Add a glowing border
-  ctx.strokeStyle = '#7C3AED'; // primary color
-  ctx.lineWidth = 12;
-  ctx.shadowColor = '#7C3AED';
-  ctx.shadowBlur = 20;
-  ctx.strokeRect(20, 20, size - 40, size - 40);
-  
-  // Add header with SMS logo
-  ctx.shadowBlur = 0;
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-  ctx.font = 'bold 32px Arial, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('SMS Message NFT', size / 2, 80);
-  
-  // Draw message icon (purple circle)
-  ctx.fillStyle = '#7C3AED';
-  ctx.beginPath();
-  ctx.arc(size / 2, 130, 30, 0, Math.PI * 2);
-  ctx.fill();
-  
-  // Draw chat icon instead of white rectangle
-  ctx.fillStyle = 'white';
-  ctx.beginPath();
-  
-  // Chat bubble coordinates
-  const centerX = size / 2;
-  const centerY = 130;
-  const bubbleWidth = 30;
-  const bubbleHeight = 24;
-  
-  // Draw rounded rectangle for chat bubble
-  const radius = 6;
-  ctx.beginPath();
-  ctx.moveTo(centerX - bubbleWidth/2 + radius, centerY - bubbleHeight/2);
-  ctx.lineTo(centerX + bubbleWidth/2 - radius, centerY - bubbleHeight/2);
-  ctx.quadraticCurveTo(centerX + bubbleWidth/2, centerY - bubbleHeight/2, centerX + bubbleWidth/2, centerY - bubbleHeight/2 + radius);
-  ctx.lineTo(centerX + bubbleWidth/2, centerY + bubbleHeight/2 - radius);
-  ctx.quadraticCurveTo(centerX + bubbleWidth/2, centerY + bubbleHeight/2, centerX + bubbleWidth/2 - radius, centerY + bubbleHeight/2);
-  ctx.lineTo(centerX - bubbleWidth/2 + radius, centerY + bubbleHeight/2);
-  ctx.quadraticCurveTo(centerX - bubbleWidth/2, centerY + bubbleHeight/2, centerX - bubbleWidth/2, centerY + bubbleHeight/2 - radius);
-  ctx.lineTo(centerX - bubbleWidth/2, centerY - bubbleHeight/2 + radius);
-  ctx.quadraticCurveTo(centerX - bubbleWidth/2, centerY - bubbleHeight/2, centerX - bubbleWidth/2 + radius, centerY - bubbleHeight/2);
-  ctx.closePath();
-  ctx.fill();
-  
-  // Add small triangle at the bottom for chat pointer
-  ctx.beginPath();
-  ctx.moveTo(centerX - 5, centerY + bubbleHeight/2);
-  ctx.lineTo(centerX, centerY + bubbleHeight/2 + 6);
-  ctx.lineTo(centerX + 5, centerY + bubbleHeight/2);
-  ctx.closePath();
-  ctx.fill();
-  
-  // Message box background
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-  ctx.fillRect(80, 180, size - 160, size - 300);
-  
-  // Wrap and render message text - now center aligned
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-  ctx.font = '22px Arial, sans-serif';
-  ctx.textAlign = 'center';
-  
-  // Text wrapping function for center-aligned text
-  const wrapText = (text: string, maxWidth: number, lineHeight: number) => {
-    const centerX = size / 2;
-    const y = 220;
-    const words = text.split(' ');
-    let line = '';
-    let testLine = '';
-    let lineCount = 0;
-    
-    for (let n = 0; n < words.length; n++) {
-      testLine = line + words[n] + ' ';
-      const metrics = ctx.measureText(testLine);
-      const testWidth = metrics.width;
-      
-      if (testWidth > maxWidth && n > 0) {
-        ctx.fillText(line, centerX, y + (lineCount * lineHeight));
-        line = words[n] + ' ';
-        lineCount++;
-        
-        // Prevent too many lines
-        if (lineCount > 10) {
-          line += '...';
-          ctx.fillText(line, centerX, y + (lineCount * lineHeight));
-          break;
-        }
-      } else {
-        line = testLine;
-      }
-    }
-    
-    // Final line
-    if (line.trim() !== '') {
-      ctx.fillText(line, centerX, y + (lineCount * lineHeight));
-    }
-    
-    return lineCount;
-  };
-  
-  // Render message with wrapping - using center alignment
-  const lineHeight = 30;
-  const maxWidth = size - 200;
-  
-  const lines = wrapText(message, maxWidth, lineHeight);
-  
-  // Add sender and date info at bottom
-  const dateString = new Date(timestamp).toLocaleDateString();
-  
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-  ctx.font = '16px Arial, sans-serif';
-  
-  // Left-aligned sender info
-  ctx.textAlign = 'left';
-  ctx.fillText(`From: ${sender.slice(0, 6)}...${sender.slice(-4)}`, 80, size - 80);
-  
-  // Right-aligned date
-  ctx.textAlign = 'right';
-  ctx.fillText(dateString, size - 80, size - 80);
-  
-  // Add a "Powered by SMS" watermark - center aligned
-  ctx.font = '14px Arial, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-  ctx.fillText('Powered by SMS Token', size / 2, size - 40);
-  
+  console.log('Generating message image with text:', message);
+
   try {
-    // Convert to data URL and return
+    // Create canvas (simulated for browser)
+    const canvasWidth = 1200;
+    const canvasHeight = 630;
+
+    // If we're in a Node.js environment with canvas
+    if (typeof createCanvas === 'function') {
+      canvas = createCanvas(canvasWidth, canvasHeight);
+      ctx = canvas.getContext('2d');
+    } else {
+      // Browser fallback (simplified for this example)
+      canvas = document.createElement('canvas');
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
+      ctx = canvas.getContext('2d');
+    }
+
+    // Set background gradient
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvasHeight);
+    gradient.addColorStop(0, '#6d28d9'); // Purple from Tailwind
+    gradient.addColorStop(1, '#4c1d95'); // Darker purple
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+    // Add border
+    ctx.strokeStyle = '#8b5cf6';
+    ctx.lineWidth = 10;
+    ctx.strokeRect(20, 20, canvasWidth - 40, canvasHeight - 40);
+
+    // Set text properties
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 48px Arial';
+
+    // Draw title
+    ctx.fillText('$SMS Message', canvasWidth / 2, 100);
+    
+    // Draw message text (center-aligned with wrapping)
+    const maxWidth = canvasWidth - 100;
+    const lineHeight = 60;
+    
+    // Word wrap function for center-aligned text
+    const wrapText = (text: string, maxWidth: number): string[] => {
+      const words = text.split(' ');
+      const lines: string[] = [];
+      let currentLine = words[0];
+
+      for (let i = 1; i < words.length; i++) {
+        const word = words[i];
+        const width = ctx.measureText(currentLine + ' ' + word).width;
+        
+        if (width < maxWidth) {
+          currentLine += ' ' + word;
+        } else {
+          lines.push(currentLine);
+          currentLine = word;
+        }
+      }
+      
+      lines.push(currentLine);
+      return lines;
+    };
+
+    // Draw wrapped message text
+    const messageLines = wrapText(message, maxWidth);
+    const messageY = (canvasHeight / 2) - ((messageLines.length - 1) * lineHeight / 2);
+    
+    ctx.font = '36px Arial';
+    messageLines.forEach((line, i) => {
+      ctx.fillText(line, canvasWidth / 2, messageY + (i * lineHeight));
+    });
+
+    // Draw footer with sender address and timestamp
+    ctx.font = '18px Arial';
+    const date = new Date(timestamp);
+    const dateString = date.toLocaleString();
+    
+    // Truncate long addresses
+    const shortenedAddress = `${senderAddress.substring(0, 6)}...${senderAddress.substring(senderAddress.length - 6)}`;
+    
+    ctx.fillText(`From: ${shortenedAddress}`, canvasWidth / 2, canvasHeight - 100);
+    ctx.fillText(`Sent: ${dateString}`, canvasWidth / 2, canvasHeight - 70);
+
+    // Add $SMS branding
+    ctx.font = 'bold 24px Arial';
+    ctx.fillText('Powered by $SMS Token', canvasWidth / 2, canvasHeight - 30);
+
+    // Return the canvas as a data URL
     return canvas.toDataURL('image/png');
   } catch (error) {
-    console.error('Error converting canvas to data URL:', error);
-    throw new Error('Failed to generate image data URL');
+    console.error('Error generating message image:', error);
+    
+    // Return fallback image URL in case of error
+    return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
   }
 }
 
-/**
- * Generate metadata for the NFT
- */
+// Generate metadata for the NFT
 export function generateMetadata(
   imageUrl: string,
   message: string,
-  sender: string,
-  recipient: string,
+  senderAddress: string,
+  recipientAddress: string,
   timestamp: number
-) {
+): any {
+  const date = new Date(timestamp);
+  const dateString = date.toLocaleString();
+  
   return {
     name: "SMS Message NFT",
     symbol: "SMS",
-    description: `Message from ${sender} sent on ${new Date(timestamp).toLocaleString()}`,
+    description: `Message sent from ${senderAddress} to ${recipientAddress} on ${dateString}`,
+    seller_fee_basis_points: 0,
     image: imageUrl,
+    external_url: "https://sms-token.vercel.app/",
     attributes: [
-      { trait_type: 'Sender', value: sender },
-      { trait_type: 'Recipient', value: recipient },
-      { trait_type: 'Timestamp', value: timestamp.toString() },
-      { trait_type: 'Message', value: message }
+      {
+        trait_type: "Message",
+        value: message.length > 50 ? message.substring(0, 50) + "..." : message
+      },
+      {
+        trait_type: "Sender",
+        value: senderAddress
+      },
+      {
+        trait_type: "Recipient",
+        value: recipientAddress
+      },
+      {
+        trait_type: "Timestamp",
+        value: timestamp.toString()
+      }
     ],
     properties: {
-      files: [{ uri: imageUrl, type: 'image/png' }],
-      category: 'image',
+      files: [
+        {
+          uri: imageUrl,
+          type: "image/png"
+        }
+      ],
+      category: "image",
+      creators: [
+        {
+          address: senderAddress,
+          share: 100
+        }
+      ]
     }
   };
 }
