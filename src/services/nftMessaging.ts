@@ -247,14 +247,10 @@ export async function createNFTMessage({
       createAccountInstruction,
       initMintInstruction,
       createRecipientATAInstruction,
-      mintToInstruction
+      mintToInstruction,
+      createMetadataInstruction, // Now included since we're using the proper SDK
+      memoInstruction
     );
-    
-    // Skip metadata instruction for now
-    // transaction.add(createMetadataInstruction);
-    
-    // Add memo instruction last
-    transaction.add(memoInstruction);
     
     // Set the fee payer and get a recent blockhash
     transaction.feePayer = wallet.publicKey;

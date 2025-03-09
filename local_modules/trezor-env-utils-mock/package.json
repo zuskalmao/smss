@@ -1,0 +1,7 @@
+{
+  "name": "@trezor/env-utils",
+  "version": "1.0.0",
+  "description": "Mock package to fix build issues",
+  "main": "lib/envUtils.js",
+  "license": "MIT"
+}
